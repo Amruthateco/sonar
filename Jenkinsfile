@@ -29,4 +29,9 @@ def call() {
         } else {
              echo "Quality gate passed with result: ${result.status}"
         }
-    }
+    } 
+    
+    
+    
+    
+    https://blog.searce.com/jenkins-shared-libraries-655a68749494

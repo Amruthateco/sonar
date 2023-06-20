@@ -1,0 +1,110 @@
+Document: Jenkinsfile to Integrate with SonarQube Using a Shared Library
+
+
+This Jenkinsfile is designed to checkout, build and analyze a Maven project using SonarQube within a Kubernetes pod using a specific container.
+
+Shared Library
+At the top of the Jenkinsfile, we load a shared library using @Library('shared-library')_. This allows us to use common steps or global variables that are defined in the shared library.
+
+Agent
+We're specifying an agent to use Kubernetes and a particular pod and container configuration. The YAML script describes a pod labeled "build-pod" and a container named "mvnjdk11" that uses the latest version of the "mvnjdk11" image.
+
+Parameters
+The maven_settings_xml parameter is defined, which allows you to specify the path to your Maven settings.xml file.
+
+Stages
+Stage 1: Checkout
+This stage is responsible for checking out the source code from the source code management (SCM) system defined in the Jenkins job configuration.
+
+Stage 2: Build & Analyze
+In this stage, we define mvnHome using the Maven tool defined in Jenkins (named 'M3'). We then execute a Maven command to clean, build, and analyze the project with SonarQube.
+
+Stage 3: Quality Gate
+In this stage, we wait for SonarQube's Quality Gate result. The waitForQualityGate step will abort the pipeline if the Quality Gate fails. This stage is set to timeout after one hour of waiting.
+
+Post Steps
+In the post steps, we always clean the workspace after the build is complete, regardless of whether the build was successful or not. This is done to ensure that the agent is ready for the next build.
+
+Requirements
+To use this Jenkinsfile, you need:
+
+A Jenkins server with the necessary plugins installed. This includes the Pipeline, Kubernetes, SonarQube Scanner and Workspace Cleanup plugins.
+
+A shared library named 'shared-library' configured in your Jenkins server.
+
+A Kubernetes cluster with a pod that can run the 'mvnjdk11:latest' image.
+
+A Maven project configured in your SCM.
+
+A SonarQube server that is accessible from the Jenkins server.
+
+Usage
+To use this Jenkinsfile, create a new Pipeline job in Jenkins and copy the contents of the Jenkinsfile into the Pipeline Script field. Alternatively, you can save the Jenkinsfile in the root directory of your source code repository, and set the job to load the Jenkinsfile from SCM.
+
+You may also need to customize the Jenkinsfile based on your specific requirements and environment. For example, you might need to change the 'M3' tool name to match your Maven tool configuration, or adjust the Maven command based on your build needs.
+
+The build_options.txt 
+file is typically a simple text file that contains configuration settings or build parameters for a build process. However, the exact content depends on the specific needs of your project and how your build process uses this file.
+
+SonarQube Properties
+The SonarQube analysis is executed with the sonar:sonar Maven goal. The settings for SonarQube, including the project key, project name, source encoding, and others are typically defined in the pom.xml file of the Maven project or in a sonar-project.properties file.
+=====
+pipeline {
+    agent {
+        kubernetes {
+            // Select the specific pod and container
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: build-pod
+spec:
+  containers:
+  - name: mvnjdk11
+    image: mvnjdk11:latest
+    command:
+    - cat
+    tty: true
+"""
+        }
+    }
+    parameters {
+        string(name: 'maven_settings_xml', defaultValue: 'settings.xml', description: 'Path to Maven settings.xml')
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build & Analyze') {
+            steps {
+                script {
+                    def mvnHome = tool 'M3'
+                    // Run sonarqube analysis with the mvn sonar:sonar command
+                    sh "'${mvnHome}/bin/mvn' --settings ${params.maven_settings_xml} clean install sonar:sonar"
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 1, unit: 'HOURS') {
+                    // waitForQualityGate aborts the pipeline if quality gate fails.
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+    }
+    post {
+        always {
+            script {
+                // Clean workspace
+                cleanWs()
+            }
+        }
+    }
+}
+

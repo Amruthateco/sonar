@@ -1,0 +1,15 @@
+mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent verify org.jacoco:jacoco-maven-plugin:report sonar:sonar [other sonar properties] -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+https://community.sonarsource.com/t/no-coverage-for-kotlin-maven-project/5088
+
+
+https://www.baeldung.com/sonarqube-jacoco-code-coverage
+Maven Plug-in
+The JaCoCo Maven plug-in provides the JaCoCo runtime agent to your tests and allows basic report creation.
+
+If you want to have line number information included in the coverage reports or you want source code highlighting the class files of the test target must be compiled with debug information.
+
+NOTE: When using the maven-surefire-plugin or maven-failsafe-plugin you must not use a forkCount of 0 or set the forkMode to never as this would prevent the execution of the tests with the javaagent set and no coverage would be recorded.
+https://www.eclemma.org/jacoco/trunk/doc/maven.html
+
+
+///
